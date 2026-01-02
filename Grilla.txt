@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Ahora al Aire</title>
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+#onair {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: #111;
+  color: #fff;
+  align-items: center;
+}
+#onair img {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.badge {
+  background: red;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  display: inline-block;
+}
+.time { font-weight: bold; margin: 6px 0; }
+
+.listen {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 8px 14px;
+  background: #ff7a00;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: bold;
+}
+.admin-panel {
+  display: none;
+  padding: 20px;
+  background: #f2f2f2;
+  color: #000;
+}
+</style>
+</head>
+<body>
+
+<div id="onair">Cargando…</div>
+
+<div class="admin-panel" id="admin">
+  <h3>Administrar programación</h3>
+  <select id="day">
+    <option value="lunes">Lunes</option>
+    <option value="martes">Martes</option>
+    <option value="miercoles">Miércoles</option>
+    <option value="jueves">Jueves</option>
+    <option value="viernes">Viernes</option>
+    <option value="sabado">Sábado</option>
+    <option value="domingo">Domingo</option>
+  </select><br><br>
+
+  <input id="name" placeholder="Nombre del programa"><br><br>
+  <input id="desc" placeholder="Descripción"><br><br>
+  <input type="time" id="start"> <input type="time" id="end"><br><br>
+  <input id="img" placeholder="URL imagen"><br><br>
+
+  <button onclick="saveProgram()">Guardar</button>
+</div>
+
+<script>
+/* ===== CONFIGURACIÓN ===== */
+const STREAM_URL = "https://tustreaming.com/stream"; // CAMBIAR
+const ADMIN_PASSWORD = "admin123"; // CAMBIAR
+
+let schedule = JSON.parse(localStorage.getItem("radioSchedule")) || {
+  lunes: [], martes: [], miercoles: [],
+  jueves: [], viernes: [], sabado: [], domingo: []
+};
+
+const mins = t => { const [h,m]=t.split(":"); return h*60+Number(m); };
+
+function currentProgram(){
+  const now = new Date();
+  const day = now.toLocaleDateString("es-ES",{weekday:"long"});
+  const m = now.getHours()*60+now.getMinutes();
+  return (schedule[day]||[]).find(p => m>=mins(p.start)&&m<mins(p.end));
+}
+
+function render(){
+  const c = document.getElementById("onair");
+  const p = currentProgram();
+  if(!p){
+    c.innerHTML = "<p>No hay programa al aire</p>";
+    return;
+  }
+  c.innerHTML = `
+    <img src="${p.image}">
+    <div>
+      <div class="badge">AL AIRE</div>
+      <h2>${p.name}</h2>
+      <div class="time">${p.start} – ${p.end}</div>
+      <p>${p.description}</p>
+      <a class="listen" href="${STREAM_URL}" target="_blank">▶ Escuchar en vivo</a>
+    </div>
+  `;
+}
+
+/* ===== ADMIN OCULTO ===== */
+if(location.hash==="#admin"){
+  if(prompt("Contraseña admin")===ADMIN_PASSWORD){
+    document.getElementById("admin").style.display="block";
+  } else {
+    alert("Acceso denegado");
+  }
+}
+
+function saveProgram(){
+  schedule[day.value].push({
+    name:name.value,
+    description:desc.value,
+    start:start.value,
+    end:end.value,
+    image:img.value
+  });
+  localStorage.setItem("radioSchedule",JSON.stringify(schedule));
+  alert("Guardado");
+  render();
+}
+
+render();
+setInterval(render,60000);
+</script>
+
+</body>
+</html>
